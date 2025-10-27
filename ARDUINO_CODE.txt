@@ -1,0 +1,89 @@
+#include <Wire.h>
+#include <Adafruit_BMP085.h>
+#include <DHT.h>
+#include <LiquidCrystal_I2C.h>
+
+// ---- DHT11 Setup ----
+#define DHTPIN 2
+#define DHTTYPE DHT11
+DHT dht(DHTPIN, DHTTYPE);
+
+// ---- BMP180 Setup ----
+Adafruit_BMP085 bmp;
+
+// ---- LCD Setup ----
+LiquidCrystal_I2C lcd(0x27, 16, 2);  // Common I2C address 0x27 or 0x3F
+
+// ---- LED Indicator ----
+#define LEDPIN 13
+
+void setup() {
+  Serial.begin(9600);
+  pinMode(LEDPIN, OUTPUT);
+
+  // Start sensors
+  dht.begin();
+  lcd.init();
+  lcd.backlight();
+
+  lcd.clear();
+  lcd.setCursor(0, 0);
+  lcd.print("Initializing...");
+  delay(2000);
+
+  if (!bmp.begin()) {
+    lcd.clear();
+    lcd.print("BMP180 not found!");
+    Serial.println("Could not find BMP180 sensor! Check wiring!");
+    while (1);
+  }
+
+  lcd.clear();
+  lcd.print("DHT11 + BMP180");
+  lcd.setCursor(0, 1);
+  lcd.print("System Ready!");
+  Serial.println("DHT11 + BMP180 sensor test started...");
+  delay(2000);
+}
+
+void loop() {
+  float t = dht.readTemperature();      // Temperature °C from DHT11
+  float h = dht.readHumidity();         // Humidity % from DHT11
+  float p = bmp.readPressure() / 100.0; // Pressure in hPa
+
+  if (isnan(t) || isnan(h) || isnan(p)) {
+    lcd.clear();
+    lcd.print("Sensor Error!");
+    Serial.println("Failed to read sensors!");
+    digitalWrite(LEDPIN, LOW);
+    delay(2000);
+    return;
+  }
+
+  // Send data to Serial for Python
+  Serial.print(t);
+  Serial.print(",");
+  Serial.print(h);
+  Serial.print(",");
+  Serial.println(p);
+
+  // Display on LCD
+  lcd.clear();
+  lcd.setCursor(0, 0);
+  lcd.print("T:");
+  lcd.print(t, 1);
+  lcd.print((char)223); // degree symbol
+  lcd.print("C H:");
+  lcd.print(h, 0);
+  lcd.print("%");
+
+  lcd.setCursor(0, 1);
+  lcd.print("P:");
+  lcd.print(p, 1);
+  lcd.print(" hPa");
+
+  // LED ON if temp > 30°C
+  digitalWrite(LEDPIN, (t > 30) ? HIGH : LOW);
+
+  delay(5000);
+}
