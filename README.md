@@ -13,3 +13,4 @@ please create a folder to Documents and named it as "ArduinoBridge"
 |                         | GND  | GND             |
 |                         | SDA  | A4              |
 |                         | SCL  | A5              |
+install libraries download from adafruit
